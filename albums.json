@@ -9,6 +9,7 @@
       "folder": "stabat-mater-rv-621",
       "cover": "cover.jpg",
       "tracks": [
+        { "file": "01_I_Stabat_Mater_1stEdit.mp3",  "name": "I. Stabat mater" },
         { "file": "02_II__Cuius_animam_1stEdit.mp3",  "name": "II. Cuius animam gementem" },
         { "file": "03_III__O_quam_tristis_1stEdit.mp3", "name": "III. O quam tristis" },
         { "file": "04_IV__Quis_est_homo_1stEdit.mp3",  "name": "IV. Quis est homo" },

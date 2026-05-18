@@ -1,0 +1,1280 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Radio Novikova">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Radio Novikova</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%231ed760'/%3E%3Ctext x='50' y='72' font-family='-apple-system,sans-serif' font-size='62' font-weight='700' fill='%23000' text-anchor='middle'%3ER%3C/text%3E%3C/svg%3E">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    :root {
+      --bg: #000;
+      --bg-grad-top: #1a1a1a;
+      --accent: #1ed760;
+      --text: #fff;
+      --text-dim: rgba(255,255,255,0.6);
+      --text-faint: rgba(255,255,255,0.4);
+      --surface: rgba(255,255,255,0.07);
+      --surface-active: rgba(255,255,255,0.14);
+      --safe-top: max(env(safe-area-inset-top), 12px);
+      --safe-bottom: max(env(safe-area-inset-bottom), 12px);
+    }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+      font-size: 15px;
+      overflow: hidden;
+      overscroll-behavior: none;
+      -webkit-font-smoothing: antialiased;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      max-width: 480px;
+      margin: 0 auto;
+      position: relative;
+      background: linear-gradient(180deg, var(--bg-grad-top) 0%, var(--bg) 60%);
+      min-height: 100dvh;
+    }
+
+    /* === Шапка === */
+    .header {
+      padding: var(--safe-top) 20px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+    .header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .reload-btn {
+      background: var(--surface);
+      border: none;
+      color: var(--text);
+      width: 36px; height: 36px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.3s;
+    }
+    .reload-btn:active { background: var(--surface-active); }
+    .reload-btn.spinning svg { animation: spin 1s linear infinite; }
+    .reload-btn svg { width: 18px; height: 18px; }
+
+    /* === Вкладки === */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      padding: 0 20px 12px;
+      flex-shrink: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar { display: none; }
+    .tab {
+      background: var(--surface);
+      border: none;
+      color: var(--text);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .tab.active { background: var(--text); color: var(--bg); }
+
+    /* === Основная область === */
+    .main {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding: 4px 16px calc(100px + var(--safe-bottom));
+    }
+    .main::-webkit-scrollbar { display: none; }
+
+    .loader, .empty, .error {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    .error { color: #ff6b6b; }
+    .spinner {
+      width: 32px; height: 32px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* === Карточки альбомов === */
+    .album-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .album-card:active { background: var(--surface); }
+    .album-cover {
+      width: 56px; height: 56px;
+      border-radius: 6px;
+      background: #222;
+      flex-shrink: 0;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .album-info { flex: 1; min-width: 0; }
+    .album-title {
+      font-size: 15px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .album-meta {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* === Детальная страница альбома === */
+    .album-detail { padding-top: 4px; }
+    .back-btn {
+      background: none;
+      border: none;
+      color: var(--text);
+      padding: 6px 10px 6px 4px;
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+    }
+    .back-btn svg { width: 18px; height: 18px; }
+
+    .album-hero {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 16px 16px 22px;
+    }
+    .album-hero img {
+      width: min(220px, 60vw);
+      aspect-ratio: 1;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #222;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+    .album-hero h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 16px;
+      line-height: 1.2;
+    }
+    .album-hero .composer {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    .album-hero .subtitle {
+      font-size: 12px;
+      color: var(--text-faint);
+      margin-top: 6px;
+    }
+    .play-album-btn {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 14px 32px;
+      border-radius: 28px;
+      font-size: 15px;
+      font-weight: 700;
+      margin-top: 20px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.1s;
+    }
+    .play-album-btn:active { transform: scale(0.97); }
+
+    /* === Треки === */
+    .track-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .track-row:active { background: var(--surface); }
+    .track-row.playing .track-name { color: var(--accent); }
+    .track-num {
+      width: 28px;
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 14px;
+      font-variant-numeric: tabular-nums;
+      flex-shrink: 0;
+    }
+    .track-row.playing .track-num {
+      color: var(--accent);
+    }
+    .track-row.playing .track-num-text {
+      display: none;
+    }
+    .track-row.playing .track-num-bars {
+      display: flex;
+    }
+    .track-num-bars {
+      display: none;
+      gap: 2px;
+      height: 14px;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .track-num-bars span {
+      display: block;
+      width: 2px;
+      background: var(--accent);
+      border-radius: 1px;
+      animation: bars 0.9s ease-in-out infinite;
+    }
+    .track-num-bars span:nth-child(1) { animation-delay: -0.2s; }
+    .track-num-bars span:nth-child(2) { animation-delay: -0.5s; }
+    .track-num-bars span:nth-child(3) { animation-delay: -0.8s; }
+    @keyframes bars {
+      0%, 100% { height: 30%; }
+      50% { height: 100%; }
+    }
+    .paused .track-num-bars span { animation-play-state: paused; }
+
+    .track-info { flex: 1; min-width: 0; }
+    .track-name {
+      font-size: 15px;
+      font-weight: 400;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+    .track-album-sub {
+      font-size: 12px;
+      color: var(--text-faint);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .fav-btn {
+      background: none;
+      border: none;
+      padding: 8px;
+      color: var(--text-faint);
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+    }
+    .fav-btn.active { color: var(--accent); }
+    .fav-btn svg { width: 18px; height: 18px; }
+
+    /* === Мини-плеер === */
+    .miniplayer {
+      position: fixed;
+      bottom: var(--safe-bottom);
+      left: 50%;
+      transform: translateX(-50%);
+      width: calc(100% - 16px);
+      max-width: 464px;
+      background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
+      border-radius: 8px;
+      padding: 10px 12px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      z-index: 50;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .miniplayer.visible { display: flex; }
+    .miniplayer img {
+      width: 40px; height: 40px;
+      border-radius: 4px;
+      object-fit: cover;
+      background: #333;
+      flex-shrink: 0;
+    }
+    .miniplayer-info { flex: 1; min-width: 0; }
+    .miniplayer-title {
+      font-size: 13px; font-weight: 600;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .miniplayer-sub {
+      font-size: 11px; color: var(--text-dim);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-top: 2px;
+    }
+    .miniplayer-btn {
+      background: none; border: none; color: var(--text);
+      padding: 6px; cursor: pointer; flex-shrink: 0;
+      display: flex;
+    }
+    .miniplayer-btn svg { width: 22px; height: 22px; }
+    .miniplayer-progress {
+      position: absolute;
+      bottom: 0; left: 0;
+      height: 2px;
+      background: var(--accent);
+      transition: width 0.2s linear;
+      border-radius: 0 0 8px 8px;
+    }
+    .miniplayer.loading .miniplayer-progress {
+      width: 100% !important;
+      background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+      background-size: 200% 100%;
+      animation: shimmer 1.2s linear infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    /* === Полноэкранный плеер === */
+    .fullplayer {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(180deg, var(--bg-color, #2a3a3a) 0%, #0a0a0a 70%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      padding: var(--safe-top) 20px var(--safe-bottom);
+      transform: translateY(100%);
+      transition: transform 0.3s ease;
+      visibility: hidden;
+    }
+    .fullplayer.visible {
+      transform: translateY(0);
+      visibility: visible;
+    }
+
+    .fp-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 18px;
+      flex-shrink: 0;
+    }
+    .fp-header button {
+      background: none; border: none; color: var(--text);
+      padding: 8px; cursor: pointer;
+      display: flex;
+    }
+    .fp-header svg { width: 22px; height: 22px; }
+    .fp-header-title {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      text-align: center;
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fp-cover-wrap {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 8px 0;
+      min-height: 0;
+    }
+    .fp-cover {
+      max-width: min(360px, 78vw);
+      max-height: 100%;
+      aspect-ratio: 1;
+      border-radius: 10px;
+      object-fit: cover;
+      background: #222;
+      box-shadow: 0 12px 40px rgba(0,0,0,0.7);
+    }
+    .fp-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 0 0;
+      flex-shrink: 0;
+    }
+    .fp-meta-text { flex: 1; min-width: 0; }
+    .fp-track-title {
+      font-size: 19px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .fp-track-sub {
+      font-size: 13px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 4px;
+    }
+    .fp-fav {
+      background: none; border: none;
+      color: var(--text-dim);
+      padding: 8px; cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+    }
+    .fp-fav.active { color: var(--accent); }
+    .fp-fav svg { width: 24px; height: 24px; }
+
+    /* === Прогресс === */
+    .progress-wrap {
+      padding: 18px 0 6px;
+      flex-shrink: 0;
+    }
+    .progress-bar {
+      position: relative;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+      cursor: pointer;
+      touch-action: none;
+      padding: 8px 0;
+      margin: -8px 0;
+    }
+    .progress-bar-inner {
+      position: relative;
+      height: 4px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+    }
+    .progress-fill {
+      position: absolute;
+      top: 0; left: 0;
+      height: 100%;
+      background: var(--text);
+      border-radius: 2px;
+      width: 0%;
+      pointer-events: none;
+    }
+    .progress-knob {
+      position: absolute;
+      top: 50%;
+      width: 12px; height: 12px;
+      background: var(--text);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      left: 0%;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .progress-bar:active .progress-knob,
+    .progress-bar.dragging .progress-knob { opacity: 1; }
+    .progress-times {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 8px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* === Управление === */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 4px 8px;
+      flex-shrink: 0;
+    }
+    .ctrl-btn {
+      background: none; border: none; color: var(--text);
+      padding: 10px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: opacity 0.1s, transform 0.1s;
+    }
+    .ctrl-btn:active { opacity: 0.6; transform: scale(0.95); }
+    .ctrl-btn svg { width: 28px; height: 28px; }
+    .ctrl-btn.small { color: var(--text-dim); }
+    .ctrl-btn.small svg { width: 22px; height: 22px; }
+    .ctrl-btn.active { color: var(--accent); }
+    .ctrl-btn.play {
+      background: var(--text); color: var(--bg);
+      width: 64px; height: 64px;
+      border-radius: 50%;
+    }
+    .ctrl-btn.play svg { width: 30px; height: 30px; }
+
+    /* === Радио === */
+    .radio-page {
+      padding: 32px 16px;
+      text-align: center;
+    }
+    .radio-icon {
+      font-size: 72px;
+      margin-bottom: 16px;
+      line-height: 1;
+    }
+    .radio-page h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .radio-page p {
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    audio { display: none; }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Radio Novikova</h1>
+    <button class="reload-btn" id="reloadBtn" title="Обновить каталог" aria-label="Обновить">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>
+    </button>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="albums">Альбомы</button>
+    <button class="tab" data-tab="favorites">Любимое</button>
+    <button class="tab" data-tab="radio">Радио</button>
+  </div>
+
+  <div class="main" id="main">
+    <div class="loader">
+      <div class="spinner"></div>
+      Загрузка каталога…
+    </div>
+  </div>
+
+  <div class="miniplayer" id="miniplayer">
+    <img id="miniCover" alt="">
+    <div class="miniplayer-info">
+      <div class="miniplayer-title" id="miniTitle"></div>
+      <div class="miniplayer-sub" id="miniSub"></div>
+    </div>
+    <button class="miniplayer-btn" id="miniPlayBtn" aria-label="Воспроизведение">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="miniplayer-btn" id="miniNextBtn" aria-label="Следующий">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l12 8-12 8V4zm12 0h2v16h-2V4z"/></svg>
+    </button>
+    <div class="miniplayer-progress" id="miniProgress"></div>
+  </div>
+
+  <div class="fullplayer" id="fullplayer">
+    <div class="fp-header">
+      <button id="fpClose" aria-label="Свернуть">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="fp-header-title" id="fpHeaderTitle">СЕЙЧАС ИГРАЕТ</div>
+      <div style="width: 38px"></div>
+    </div>
+    <div class="fp-cover-wrap">
+      <img class="fp-cover" id="fpCover" alt="">
+    </div>
+    <div class="fp-meta">
+      <div class="fp-meta-text">
+        <div class="fp-track-title" id="fpTitle"></div>
+        <div class="fp-track-sub" id="fpSub"></div>
+      </div>
+      <button class="fp-fav" id="fpFav" aria-label="В Любимое">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      </button>
+    </div>
+    <div class="progress-wrap">
+      <div class="progress-bar" id="progressBar">
+        <div class="progress-bar-inner">
+          <div class="progress-fill" id="progressFill"></div>
+          <div class="progress-knob" id="progressKnob"></div>
+        </div>
+      </div>
+      <div class="progress-times">
+        <span id="curTime">0:00</span>
+        <span id="durTime">0:00</span>
+      </div>
+    </div>
+    <div class="controls">
+      <button class="ctrl-btn small" id="shuffleBtn" title="Перемешать" aria-label="Перемешать">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+      </button>
+      <button class="ctrl-btn" id="prevBtn" aria-label="Предыдущий">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h2v16H6V4zm3.5 8l8.5-6v12z"/></svg>
+      </button>
+      <button class="ctrl-btn play" id="playBtn" aria-label="Воспроизведение">
+        <svg id="playIcon" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button class="ctrl-btn" id="nextBtn" aria-label="Следующий">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l12 8-12 8V4zm12 0h2v16h-2V4z"/></svg>
+      </button>
+      <button class="ctrl-btn small" id="repeatBtn" title="Повтор" aria-label="Повтор">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <audio id="audio" preload="metadata"></audio>
+
+<script>
+// ================== СОСТОЯНИЕ ==================
+const state = {
+  catalog: null,
+  currentTab: 'albums',
+  currentView: 'list',
+  currentAlbumId: null,
+  queue: [],
+  queueIndex: -1,
+  isPlaying: false,
+  isShuffle: false,
+  isRepeat: false,
+  isRadio: false,
+  favorites: loadFavorites()
+};
+
+const audio = document.getElementById('audio');
+
+// === Хранилище любимых ===
+function loadFavorites() {
+  try {
+    const raw = localStorage.getItem('rn_favorites_v1');
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch (e) { return new Set(); }
+}
+function saveFavorites() {
+  try {
+    localStorage.setItem('rn_favorites_v1', JSON.stringify([...state.favorites]));
+  } catch (e) {}
+}
+
+// === URL-ы ===
+function trackUrl(album, track) {
+  return 'albums/' + album.folder + '/' + track.file;
+}
+function coverUrl(album) {
+  if (album.cover) {
+    return 'albums/' + album.folder + '/' + album.cover;
+  }
+  return placeholderCover();
+}
+function placeholderCover() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="%23333"/><stop offset="1" stop-color="%23111"/></linearGradient></defs><rect width="200" height="200" fill="url(%23g)"/><text x="100" y="118" font-family="sans-serif" font-size="80" fill="%23555" text-anchor="middle">♪</text></svg>'
+  );
+}
+
+// === Утилиты ===
+function fmtTime(sec) {
+  if (!isFinite(sec) || sec < 0) return '0:00';
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+function trackUid(albumId, file) {
+  return albumId + '/' + file;
+}
+function getAlbumById(id) {
+  return state.catalog.albums.find(a => a.id === id);
+}
+function getTrack(albumId, file) {
+  const album = getAlbumById(albumId);
+  if (!album) return null;
+  const track = album.tracks.find(t => t.file === file);
+  return track ? { track, album } : null;
+}
+function escapeHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function plural(n, one, few, many) {
+  const mod10 = n % 10, mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) return few;
+  return many;
+}
+function favIcon(active) {
+  if (active) {
+    return '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+  }
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>';
+}
+
+// ================== ЗАГРУЗКА КАТАЛОГА ==================
+function loadCatalog(forceReload) {
+  const main = document.getElementById('main');
+  main.innerHTML = '<div class="loader"><div class="spinner"></div>Загрузка каталога…</div>';
+  const cacheBust = forceReload ? ('?t=' + Date.now()) : '';
+  fetch('albums.json' + cacheBust, { cache: forceReload ? 'reload' : 'default' })
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(data => {
+      state.catalog = data;
+      render();
+    })
+    .catch(err => {
+      main.innerHTML = '<div class="error">Не удалось загрузить каталог.<br><br>' +
+        escapeHtml(err.message || String(err)) +
+        '<br><br>Проверьте, что файл <code>albums.json</code> существует и доступен.</div>';
+    });
+}
+
+// ================== РЕНДЕР ==================
+function render() {
+  if (!state.catalog) return;
+  if (state.currentView === 'album') {
+    renderAlbumDetail();
+    return;
+  }
+  if (state.currentTab === 'albums') renderAlbumsList();
+  else if (state.currentTab === 'favorites') renderFavorites();
+  else if (state.currentTab === 'radio') renderRadio();
+}
+
+function renderAlbumsList() {
+  const main = document.getElementById('main');
+  const albums = state.catalog.albums;
+  if (albums.length === 0) {
+    main.innerHTML = '<div class="empty">В каталоге пока нет альбомов.</div>';
+    return;
+  }
+  let html = '';
+  albums.forEach(a => {
+    const meta = [a.composer, a.tracks.length + ' ' + plural(a.tracks.length, 'трек', 'трека', 'треков')]
+      .filter(Boolean).join(' • ');
+    html += '<div class="album-card" data-album="' + escapeHtml(a.id) + '">' +
+      '<img class="album-cover" src="' + escapeHtml(coverUrl(a)) + '" onerror="this.src=\'' + placeholderCover() + '\'" alt="">' +
+      '<div class="album-info">' +
+        '<div class="album-title">' + escapeHtml(a.title) + '</div>' +
+        '<div class="album-meta">' + escapeHtml(meta) + '</div>' +
+      '</div>' +
+    '</div>';
+  });
+  main.innerHTML = html;
+  main.querySelectorAll('.album-card').forEach(el => {
+    el.addEventListener('click', () => openAlbum(el.dataset.album));
+  });
+}
+
+function renderAlbumDetail() {
+  const main = document.getElementById('main');
+  const album = getAlbumById(state.currentAlbumId);
+  if (!album) { state.currentView = 'list'; render(); return; }
+
+  let html = '<div class="album-detail">' +
+    '<button class="back-btn" id="backBtn">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>' +
+      'Назад' +
+    '</button>' +
+    '<div class="album-hero">' +
+      '<img src="' + escapeHtml(coverUrl(album)) + '" onerror="this.src=\'' + placeholderCover() + '\'" alt="">' +
+      '<h2>' + escapeHtml(album.title) + '</h2>' +
+      (album.composer ? '<div class="composer">' + escapeHtml(album.composer) + '</div>' : '') +
+      '<div class="subtitle">' + escapeHtml((album.year ? album.year + ' • ' : '') + (album.artist || '')) + '</div>' +
+      '<button class="play-album-btn" id="playAlbumBtn">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' +
+        'Слушать' +
+      '</button>' +
+    '</div>';
+
+  album.tracks.forEach((t, i) => {
+    const uid = trackUid(album.id, t.file);
+    const isCurrent = state.queueIndex >= 0 && state.queue[state.queueIndex] &&
+                      state.queue[state.queueIndex].uid === uid;
+    const pausedCls = (isCurrent && !state.isPlaying) ? ' paused' : '';
+    const isFav = state.favorites.has(uid);
+    html += '<div class="track-row ' + (isCurrent ? 'playing' : '') + pausedCls + '" data-idx="' + i + '">' +
+      '<div class="track-num">' +
+        '<span class="track-num-text">' + (i + 1) + '</span>' +
+        '<span class="track-num-bars"><span></span><span></span><span></span></span>' +
+      '</div>' +
+      '<div class="track-info"><div class="track-name">' + escapeHtml(t.name) + '</div></div>' +
+      '<button class="fav-btn ' + (isFav ? 'active' : '') + '" data-uid="' + escapeHtml(uid) + '" aria-label="Любимое">' +
+        favIcon(isFav) +
+      '</button>' +
+    '</div>';
+  });
+  html += '</div>';
+  main.innerHTML = html;
+
+  document.getElementById('backBtn').addEventListener('click', () => {
+    state.currentView = 'list';
+    render();
+  });
+  document.getElementById('playAlbumBtn').addEventListener('click', () => playAlbum(album.id, 0));
+  main.querySelectorAll('.track-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.closest('.fav-btn')) return;
+      playAlbum(album.id, parseInt(row.dataset.idx, 10));
+    });
+  });
+  main.querySelectorAll('.fav-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleFavorite(btn.dataset.uid);
+    });
+  });
+}
+
+function renderFavorites() {
+  const main = document.getElementById('main');
+  const favTracks = [];
+  state.catalog.albums.forEach(album => {
+    album.tracks.forEach(t => {
+      const uid = trackUid(album.id, t.file);
+      if (state.favorites.has(uid)) {
+        favTracks.push({ track: t, album: album, uid: uid });
+      }
+    });
+  });
+
+  if (favTracks.length === 0) {
+    main.innerHTML = '<div class="empty">В Любимом пока пусто.<br><br>Нажмите ♥ рядом с треком, чтобы добавить его сюда.</div>';
+    return;
+  }
+
+  let html = '<div style="padding: 12px 8px 16px;"><button class="play-album-btn" id="playFavBtn" style="margin-top: 0;">' +
+    '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' +
+    'Слушать всё</button></div>';
+
+  favTracks.forEach((item, i) => {
+    const t = item.track, album = item.album, uid = item.uid;
+    const isCurrent = state.queueIndex >= 0 && state.queue[state.queueIndex] &&
+                      state.queue[state.queueIndex].uid === uid;
+    const pausedCls = (isCurrent && !state.isPlaying) ? ' paused' : '';
+    html += '<div class="track-row ' + (isCurrent ? 'playing' : '') + pausedCls + '" data-fav-idx="' + i + '">' +
+      '<img class="album-cover" style="width:40px;height:40px" src="' + escapeHtml(coverUrl(album)) + '" onerror="this.src=\'' + placeholderCover() + '\'" alt="">' +
+      '<div class="track-info">' +
+        '<div class="track-name">' + escapeHtml(t.name) + '</div>' +
+        '<div class="track-album-sub">' + escapeHtml(album.title) + '</div>' +
+      '</div>' +
+      '<button class="fav-btn active" data-uid="' + escapeHtml(uid) + '" aria-label="Удалить из Любимого">' + favIcon(true) + '</button>' +
+    '</div>';
+  });
+  main.innerHTML = html;
+
+  document.getElementById('playFavBtn').addEventListener('click', () => playFavorites(0));
+  main.querySelectorAll('.track-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.closest('.fav-btn')) return;
+      playFavorites(parseInt(row.dataset.favIdx, 10));
+    });
+  });
+  main.querySelectorAll('.fav-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleFavorite(btn.dataset.uid);
+    });
+  });
+}
+
+function renderRadio() {
+  const main = document.getElementById('main');
+  const total = state.catalog.albums.reduce((s, a) => s + a.tracks.length, 0);
+  main.innerHTML =
+    '<div class="radio-page">' +
+      '<div class="radio-icon">📻</div>' +
+      '<h2>Режим Радио</h2>' +
+      '<p>Непрерывное проигрывание случайных треков из всех альбомов.<br>' +
+      'Всего в эфире: ' + total + ' ' + plural(total, 'трек', 'трека', 'треков') + '</p>' +
+      '<button class="play-album-btn" id="startRadioBtn">' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>' +
+        'Включить радио' +
+      '</button>' +
+    '</div>';
+  document.getElementById('startRadioBtn').addEventListener('click', startRadio);
+}
+
+// ================== ВОСПРОИЗВЕДЕНИЕ ==================
+function makeQueueItem(albumId, file) {
+  return { albumId: albumId, file: file, uid: trackUid(albumId, file) };
+}
+
+function playAlbum(albumId, startIdx) {
+  const album = getAlbumById(albumId);
+  if (!album || album.tracks.length === 0) return;
+  state.isRadio = false;
+  state.queue = album.tracks.map(t => makeQueueItem(album.id, t.file));
+  state.queueIndex = startIdx || 0;
+  if (state.isShuffle) shuffleQueue();
+  playCurrent();
+}
+
+function playFavorites(startIdx) {
+  const list = [];
+  state.catalog.albums.forEach(album => {
+    album.tracks.forEach(t => {
+      const uid = trackUid(album.id, t.file);
+      if (state.favorites.has(uid)) list.push(makeQueueItem(album.id, t.file));
+    });
+  });
+  if (list.length === 0) return;
+  state.isRadio = false;
+  state.queue = list;
+  state.queueIndex = startIdx || 0;
+  playCurrent();
+}
+
+function startRadio() {
+  state.isRadio = true;
+  state.isShuffle = true;
+  document.getElementById('shuffleBtn').classList.add('active');
+  const all = [];
+  state.catalog.albums.forEach(album => {
+    album.tracks.forEach(t => all.push(makeQueueItem(album.id, t.file)));
+  });
+  if (all.length === 0) return;
+  state.queue = all;
+  shuffleQueue();
+  state.queueIndex = 0;
+  playCurrent();
+}
+
+function shuffleQueue() {
+  const cur = state.queue[state.queueIndex];
+  for (let i = state.queue.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [state.queue[i], state.queue[j]] = [state.queue[j], state.queue[i]];
+  }
+  if (cur) {
+    state.queueIndex = state.queue.findIndex(q => q.uid === cur.uid);
+    if (state.queueIndex < 0) state.queueIndex = 0;
+  }
+}
+
+function playCurrent() {
+  if (state.queueIndex < 0 || state.queueIndex >= state.queue.length) return;
+  const item = state.queue[state.queueIndex];
+  const found = getTrack(item.albumId, item.file);
+  if (!found) { nextTrack(); return; }
+
+  audio.src = trackUrl(found.album, found.track);
+  audio.play().then(() => {
+    state.isPlaying = true;
+    updatePlayerUI();
+  }).catch(err => {
+    console.warn('autoplay rejected:', err);
+    // На iOS первое воспроизведение требует жест пользователя, но клик по треку — это жест.
+    // Если всё же не пошло — обновим UI хотя бы.
+    state.isPlaying = false;
+    updatePlayerUI();
+  });
+
+  state.isPlaying = true;
+  updatePlayerUI();
+  showMiniplayer();
+  updateMediaSession(found.album, found.track);
+  if (state.currentView === 'album' || state.currentTab === 'favorites') render();
+}
+
+function togglePlay() {
+  if (state.queueIndex < 0) return;
+  if (audio.paused) {
+    audio.play();
+    state.isPlaying = true;
+  } else {
+    audio.pause();
+    state.isPlaying = false;
+  }
+  updatePlayerUI();
+  if (state.currentView === 'album' || state.currentTab === 'favorites') render();
+}
+
+function nextTrack() {
+  if (state.queue.length === 0) return;
+  if (state.isRadio) {
+    state.queueIndex = (state.queueIndex + 1) % state.queue.length;
+    if (state.queueIndex === 0) shuffleQueue();
+  } else {
+    state.queueIndex++;
+    if (state.queueIndex >= state.queue.length) {
+      if (state.isRepeat) {
+        state.queueIndex = 0;
+      } else {
+        state.queueIndex = state.queue.length - 1;
+        audio.pause();
+        state.isPlaying = false;
+        updatePlayerUI();
+        return;
+      }
+    }
+  }
+  playCurrent();
+}
+
+function prevTrack() {
+  if (state.queue.length === 0) return;
+  if (audio.currentTime > 3) {
+    audio.currentTime = 0;
+    return;
+  }
+  state.queueIndex--;
+  if (state.queueIndex < 0) state.queueIndex = 0;
+  playCurrent();
+}
+
+function toggleFavorite(uid) {
+  if (state.favorites.has(uid)) state.favorites.delete(uid);
+  else state.favorites.add(uid);
+  saveFavorites();
+
+  // Обновим все видимые кнопки этого uid
+  document.querySelectorAll('.fav-btn[data-uid="' + cssEscape(uid) + '"]').forEach(btn => {
+    const active = state.favorites.has(uid);
+    btn.classList.toggle('active', active);
+    btn.innerHTML = favIcon(active);
+  });
+  // Обновим fp-fav если это текущий трек
+  const cur = state.queue[state.queueIndex];
+  if (cur && cur.uid === uid) {
+    const fpFav = document.getElementById('fpFav');
+    const active = state.favorites.has(uid);
+    fpFav.classList.toggle('active', active);
+    fpFav.innerHTML = favIcon(active);
+  }
+  // Если на вкладке любимое — перерендерим
+  if (state.currentTab === 'favorites' && state.currentView === 'list') render();
+}
+
+function cssEscape(s) {
+  if (window.CSS && CSS.escape) return CSS.escape(s);
+  return s.replace(/["\\]/g, '\\$&');
+}
+
+// ================== ОБНОВЛЕНИЕ UI ==================
+function updatePlayerUI() {
+  const playIcon = document.getElementById('playIcon');
+  const miniBtn = document.getElementById('miniPlayBtn');
+  if (state.isPlaying) {
+    playIcon.innerHTML = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+    miniBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>';
+  } else {
+    playIcon.innerHTML = '<path d="M8 5v14l11-7z"/>';
+    miniBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>';
+  }
+
+  const cur = state.queue[state.queueIndex];
+  if (!cur) return;
+  const found = getTrack(cur.albumId, cur.file);
+  if (!found) return;
+
+  document.getElementById('miniTitle').textContent = found.track.name;
+  document.getElementById('miniSub').textContent = found.album.title;
+  document.getElementById('miniCover').src = coverUrl(found.album);
+  document.getElementById('fpTitle').textContent = found.track.name;
+  document.getElementById('fpSub').textContent = found.album.composer
+    ? found.album.title + ' — ' + found.album.composer
+    : found.album.title;
+  document.getElementById('fpCover').src = coverUrl(found.album);
+  document.getElementById('fpHeaderTitle').textContent =
+    state.isRadio ? 'РАДИО' : found.album.title.toUpperCase();
+
+  const isFav = state.favorites.has(cur.uid);
+  const fpFav = document.getElementById('fpFav');
+  fpFav.classList.toggle('active', isFav);
+  fpFav.innerHTML = favIcon(isFav);
+}
+
+function showMiniplayer() {
+  document.getElementById('miniplayer').classList.add('visible');
+}
+
+// ================== MEDIA SESSION (управление с lockscreen / наушников) ==================
+function updateMediaSession(album, track) {
+  if (!('mediaSession' in navigator)) return;
+  navigator.mediaSession.metadata = new MediaMetadata({
+    title: track.name,
+    artist: album.artist || album.composer || 'Radio Novikova',
+    album: album.title,
+    artwork: [
+      { src: coverUrl(album), sizes: '512x512', type: 'image/jpeg' }
+    ]
+  });
+  try {
+    navigator.mediaSession.setActionHandler('play', () => { audio.play(); });
+    navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); });
+    navigator.mediaSession.setActionHandler('previoustrack', prevTrack);
+    navigator.mediaSession.setActionHandler('nexttrack', nextTrack);
+    navigator.mediaSession.setActionHandler('seekto', (e) => {
+      if (e.fastSeek && 'fastSeek' in audio) {
+        audio.fastSeek(e.seekTime);
+      } else {
+        audio.currentTime = e.seekTime;
+      }
+    });
+  } catch (e) {}
+}
+
+// ================== СОБЫТИЯ АУДИО ==================
+audio.addEventListener('timeupdate', () => {
+  if (!isFinite(audio.duration)) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  document.getElementById('progressFill').style.width = pct + '%';
+  document.getElementById('progressKnob').style.left = pct + '%';
+  document.getElementById('miniProgress').style.width = pct + '%';
+  document.getElementById('curTime').textContent = fmtTime(audio.currentTime);
+  document.getElementById('durTime').textContent = fmtTime(audio.duration);
+
+  if ('mediaSession' in navigator && navigator.mediaSession.setPositionState) {
+    try {
+      navigator.mediaSession.setPositionState({
+        duration: audio.duration,
+        playbackRate: audio.playbackRate,
+        position: audio.currentTime
+      });
+    } catch (e) {}
+  }
+});
+audio.addEventListener('ended', nextTrack);
+audio.addEventListener('play', () => { state.isPlaying = true; updatePlayerUI(); });
+audio.addEventListener('pause', () => { state.isPlaying = false; updatePlayerUI(); });
+audio.addEventListener('error', e => {
+  console.error('Audio error:', e);
+  setTimeout(() => {
+    if (state.queue.length > 1) nextTrack();
+  }, 500);
+});
+audio.addEventListener('waiting', () => {
+  document.getElementById('miniplayer').classList.add('loading');
+});
+audio.addEventListener('canplay', () => {
+  document.getElementById('miniplayer').classList.remove('loading');
+});
+audio.addEventListener('playing', () => {
+  document.getElementById('miniplayer').classList.remove('loading');
+});
+
+// ================== УПРАВЛЕНИЕ ==================
+document.getElementById('playBtn').addEventListener('click', togglePlay);
+document.getElementById('miniPlayBtn').addEventListener('click', e => { e.stopPropagation(); togglePlay(); });
+document.getElementById('miniNextBtn').addEventListener('click', e => { e.stopPropagation(); nextTrack(); });
+document.getElementById('nextBtn').addEventListener('click', nextTrack);
+document.getElementById('prevBtn').addEventListener('click', prevTrack);
+document.getElementById('shuffleBtn').addEventListener('click', () => {
+  state.isShuffle = !state.isShuffle;
+  document.getElementById('shuffleBtn').classList.toggle('active', state.isShuffle);
+  if (state.isShuffle && state.queue.length > 0) shuffleQueue();
+});
+document.getElementById('repeatBtn').addEventListener('click', () => {
+  state.isRepeat = !state.isRepeat;
+  document.getElementById('repeatBtn').classList.toggle('active', state.isRepeat);
+});
+document.getElementById('fpFav').addEventListener('click', () => {
+  const cur = state.queue[state.queueIndex];
+  if (cur) toggleFavorite(cur.uid);
+});
+
+// Развернуть/свернуть полноэкранный плеер
+document.getElementById('miniplayer').addEventListener('click', () => {
+  if (state.queueIndex < 0) return;
+  document.getElementById('fullplayer').classList.add('visible');
+});
+document.getElementById('fpClose').addEventListener('click', () => {
+  document.getElementById('fullplayer').classList.remove('visible');
+});
+
+// Прогресс-бар: тап и драг
+(function() {
+  const bar = document.getElementById('progressBar');
+  let dragging = false;
+
+  function seekTo(clientX) {
+    const inner = bar.querySelector('.progress-bar-inner');
+    const rect = inner.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    if (isFinite(audio.duration)) audio.currentTime = pct * audio.duration;
+  }
+
+  bar.addEventListener('pointerdown', e => {
+    dragging = true;
+    bar.classList.add('dragging');
+    bar.setPointerCapture(e.pointerId);
+    seekTo(e.clientX);
+  });
+  bar.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    seekTo(e.clientX);
+  });
+  bar.addEventListener('pointerup', () => {
+    dragging = false;
+    bar.classList.remove('dragging');
+  });
+  bar.addEventListener('pointercancel', () => {
+    dragging = false;
+    bar.classList.remove('dragging');
+  });
+})();
+
+// Вкладки
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    state.currentTab = t.dataset.tab;
+    state.currentView = 'list';
+    render();
+    document.getElementById('main').scrollTop = 0;
+  });
+});
+
+// Перезагрузка
+document.getElementById('reloadBtn').addEventListener('click', () => {
+  const btn = document.getElementById('reloadBtn');
+  btn.classList.add('spinning');
+  loadCatalog(true);
+  setTimeout(() => btn.classList.remove('spinning'), 800);
+});
+
+function openAlbum(albumId) {
+  state.currentAlbumId = albumId;
+  state.currentView = 'album';
+  render();
+  document.getElementById('main').scrollTop = 0;
+}
+
+// === Старт
+loadCatalog();
+</script>
+</body>
+</html>

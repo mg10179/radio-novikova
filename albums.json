@@ -1,0 +1,43 @@
+{
+  "albums": [
+    {
+      "id": "stabat-mater-rv-621",
+      "title": "Stabat Mater RV 621",
+      "composer": "Antonio Vivaldi",
+      "artist": "Ekaterina Novikova, Symphonia Berlin Ensemble",
+      "year": "2026",
+      "folder": "stabat-mater-rv-621",
+      "cover": "cover.jpg",
+      "tracks": [
+        { "file": "02_II__Cuius_animam_1stEdit.mp3",  "name": "II. Cuius animam gementem" },
+        { "file": "03_III__O_quam_tristis_1stEdit.mp3", "name": "III. O quam tristis" },
+        { "file": "04_IV__Quis_est_homo_1stEdit.mp3",  "name": "IV. Quis est homo" },
+        { "file": "05_V__Quis_non_posset_1stEdit.mp3", "name": "V. Quis non posset" },
+        { "file": "06_VI__Pro_peccatis_1stEdit.mp3",   "name": "VI. Pro peccatis" },
+        { "file": "07_VII__Eja_Mater_1stEdit.mp3",     "name": "VII. Eja Mater" },
+        { "file": "08_VIII__Fac_ut_ardeat_1stEdit.mp3","name": "VIII. Fac ut ardeat" },
+        { "file": "09_IX__Amen_1stEdit.mp3",           "name": "IX. Amen" }
+      ]
+    },
+    {
+      "id": "nisi-dominus-rv-608",
+      "title": "Nisi Dominus RV 608",
+      "composer": "Antonio Vivaldi",
+      "artist": "Ekaterina Novikova, Symphonia Berlin Ensemble",
+      "year": "2026",
+      "folder": "nisi-dominus-rv-608",
+      "cover": "cover.jpg",
+      "tracks": [
+        { "file": "10_Nisi_Dominus_RV_608_1stEdit.mp3",       "name": "I. Nisi Dominus" },
+        { "file": "11_II__Vanum_est_nobis_1stEdit.mp3",       "name": "II. Vanum est nobis" },
+        { "file": "12_III__Sorgite_1stEdit.mp3",              "name": "III. Surgite" },
+        { "file": "13_IV__Cum_dederit_1stEdit.mp3",           "name": "IV. Cum dederit" },
+        { "file": "14_V__Sicut_sagitte_1stEdit.mp3",          "name": "V. Sicut sagittae" },
+        { "file": "15_VI__Beatus_vir_1stEdit.mp3",            "name": "VI. Beatus vir" },
+        { "file": "16_VII__Gloria_Patri_1stEdit.mp3",         "name": "VII. Gloria Patri" },
+        { "file": "17_VIII__Sicut_erat_in_principio_1stEdit.mp3", "name": "VIII. Sicut erat in principio" },
+        { "file": "18_IX__Amen_1stEdit.mp3",                  "name": "IX. Amen" }
+      ]
+    }
+  ]
+}
